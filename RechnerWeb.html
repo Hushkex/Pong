@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Einfacher Rechner</title>
+
+    <style>
+        body {
+            font-family: GothicG, sans-serif;
+			color: white;
+            margin: 40px;
+			background-color: #111111
+        }
+
+        .rechner {
+
+            width: 500px;
+            padding: 20px;
+            border: 1px solid #d5b06a;
+            border-radius: 10px;
+			background: #1b1b1b;
+        }
+
+        .eingabe {
+            margin-bottom: 15px;
+			
+        }
+
+        .eingabe label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+        }
+
+        .operationen {
+            margin: 15px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+			background-color: #b8822f;
+			color: white;
+        }
+
+        #ergebnis {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="rechner">
+		
+
+        <h1>Mathematischer Rechner</h1>
+
+        <div class="eingabe">
+            <label for="zahl1">Erste Zahl:</label>
+            <input type="number" id="zahl1">
+        </div>
+
+        <div class="eingabe">
+            <label for="zahl2">Zweite Zahl:</label>
+            <input type="number" id="zahl2">
+        </div>
+
+        <div class="operationen">
+            <strong>Rechenart:</strong><br><br>
+
+            <label>
+                <input type="radio" name="operation" value="addition" checked>
+                Addition (+)
+            </label>
+
+            <label>
+                <input type="radio" name="operation" value="subtraktion">
+                Subtraktion (-)
+            </label><br>
+
+            <label>
+                <input type="radio" name="operation" value="multiplikation">
+                Multiplikation (*)
+            </label>
+
+            <label>
+                <input type="radio" name="operation" value="division">
+                Division (/)
+            </label>
+        </div>
+	
+		        <h1>Einheitsrechner</h1>
+
+        <div class="eingabe">
+            <label for="wert">Wert:</label>
+            <input type="number" id="wert">
+        </div>
+
+        <div class="operationen">
+            <strong>Umrechnung:</strong><br><br>
+
+            <label>
+                <input type="radio" name="operation" value="Entfernung" checked>
+                Kilometer zu Meter
+            </label>
+
+            <label>
+                <input type="radio" name="operation" value="Temperatur">
+                Celsius zu Kelvin
+            </label><br>
+
+            <label>
+                <input type="radio" name="operation" value="Gewicht">
+                Gramm zu Tonnen
+            </label>
+
+            <label>
+                <input type="radio" name="operation" value="Geschwindigkeit">
+                Km/h zu m/s
+            </label>
+			
+            <label><br>
+                <input type="radio" name="operation" value="CakeIsALie">
+                Kuchen :D
+            </label>			
+        </div>
+
+        <button onclick="berechnen()">Berechnen</button>
+
+        <div id="ergebnis">
+            Ergebnis: -
+        </div>
+
+    </div>
+
+
+    <script>
+
+        function berechnen() {
+
+            // Eingaben auslesen
+            let zahl1 = Number(document.getElementById("zahl1").value);
+            let zahl2 = Number(document.getElementById("zahl2").value);
+			let wert = Number(document.getElementById("wert").value);
+
+            // Ausgewählten Radio-Button ermitteln
+            let operation =
+                document.querySelector('input[name="operation"]:checked').value;
+
+            let ergebnis;
+
+
+            // Berechnung durchführen
+            switch (operation) {
+
+                case "addition":
+                    ergebnis = zahl1 + zahl2;
+                    break;
+
+                case "subtraktion":
+                    ergebnis = zahl1 - zahl2;
+                    break;
+
+                case "multiplikation":
+                    ergebnis = zahl1 * zahl2;
+                    break;
+
+                case "division":
+
+                    if (zahl2 === 0 || zahl1 === 0) {
+                        document.getElementById("ergebnis").textContent =
+                            "Fehler: Division durch 0!";
+                        return;
+                    }
+
+                    ergebnis = zahl1 / zahl2;
+                    break;
+					
+			    case "Entfernung":
+                    ergebnis = wert * 1000;
+                    break;
+
+                case "Temperatur":
+                    ergebnis = wert + 273,15;
+                    break;
+
+                case "Gewicht":
+                    if (wert === 0) {
+                        document.getElementById("ergebnis").textContent =
+                            "Fehler: Division durch 0!";
+                        return;
+                    }
+                    ergebnis = wert / Math.pow(10,6);
+                    break;
+					
+                case "Geschwindigkeit":
+                    if (wert === 0) {
+                        document.getElementById("ergebnis").textContent =
+                            "Fehler: Division durch 0!";
+                        return;
+                    }				
+                    ergebnis = wert / 3,6;
+                    break;
+
+			    case "CakeIsALie":
+                    ergebnis = 3.141592653589;
+                    break					
+            }
+
+
+            // Ergebnis anzeigen
+            document.getElementById("ergebnis").textContent =
+                "Ergebnis: " + ergebnis;
+        }
+
+    </script>
+
+</body>
+</html>
