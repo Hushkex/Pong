@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong</title>
+
+    <style>
+  html, body { margin: 0; height: 100%; background: #111; overflow: hidden; }
+  #stage {                       /* Logische Größe = Raster */
+    position: absolute; left: 50%; top: 50%;
+    width: 1024px; height: 512px;
+    background: #1b1b2f; transform-origin: 0 0;
+  }
+  .obj { position: absolute; will-change: transform; }
+  #paddle { background: #4ec9ff; border-radius: 4px; }
+  #ball   { background: #fff; border-radius: 50%; }
+  .brick  { box-sizing: border-box; border: 2px solid rgba(0,0,0,.3); border-radius: 3px; }
+  .t1 { background: #e5484d; }  /* Ziegeltypen = CSS-Klassen */
+  .t2 { background: #f5a623; }
+</style>
+
+</head>
+<body>
+    <div id="stage"></div>
+<script>
+  const W = 1024, H = 512;
+const grid = new Uint8Array(W * H);
+const stage = document.getElementById('stage');
+
+const EMPTY = 0, WALL = 1, PADDLE = 2;   // ab 3: Ziegel-IDs
+const bricks = new Map();                // id -> Ziegel-Objekt
+
+// ---------- Hilfsfunktionen für das Raster ----------
+function fillRect(x, y, w, h, id) {
+  for (let j = y; j < y + h; j++)
+    grid.fill(id, j * W + x, j * W + x + w);
+}
+function cell(x, y) {
+  if (x < 0 || x >= W || y < 0 || y >= H) return WALL;  // Rand = Wand
+  return grid[y * W + x];
+}
+function makeEl(cls, x, y, w, h) {
+  const el = document.createElement('div');
+  el.className = 'obj ' + cls;
+  el.style.width = w + 'px'; el.style.height = h + 'px';
+  el.style.transform = `translate(${x}px, ${y}px)`;
+  stage.appendChild(el);
+  return el;
+}
+
+// ---------- Ziegel (Typen als Daten -> leicht erweiterbar) ----------
+const BRICK_TYPES = {
+  normal: { cls: 't1', hp: 1 },
+  hart:   { cls: 't2', hp: 2 },
+  // später: unzerstörbar, Bonus, bewegend ...
+};
+let nextId = 3;
+function addBrick(x, y, w, h, type) {
+  const id = nextId++;
+  const t = BRICK_TYPES[type];
+  const b = { id, x, y, w, h, hp: t.hp, type, el: makeEl('brick ' + t.cls, x, y, w, h) };
+  bricks.set(id, b);
+  fillRect(x, y, w, h, id);
+}
+function hitBrick(id) {
+  const b = bricks.get(id);
+  if (!b) return;
+  if (--b.hp <= 0) {
+    fillRect(b.x, b.y, b.w, b.h, EMPTY);
+    b.el.remove();
+    bricks.delete(id);
+  }
+}
+
+// ---------- Schläger ----------
+const paddle = { x: 448, y: 10, w: 128, h: 12 };
+paddle.el = makeEl('paddle', paddle.x, paddle.y, paddle.w, paddle.h);
+function setPaddle(x) {
+  fillRect(paddle.x, paddle.y, paddle.w, paddle.h, EMPTY);        // alte Position löschen
+  paddle.x = Math.max(0, Math.min(W - paddle.w, Math.round(x - paddle.w / 2)));
+  fillRect(paddle.x, paddle.y, paddle.w, paddle.h, PADDLE);       // neue eintragen
+  paddle.el.style.transform = `translate(${paddle.x}px, ${paddle.y}px)`;
+}
+
+// ---------- Ball ----------
+const ball = { x: 508, y: 40, s: 8, vx: 3, vy: 4 };  // s = Kantenlänge in Rasterzellen
+ball.el = makeEl('ball', ball.x, ball.y, ball.s, ball.s);
+
+// Prüft, ob das Ballquadrat an Position (nx, ny) etwas berührt; gibt die erste ID zurück
+function probe(nx, ny) {
+  for (let j = 0; j < ball.s; j++)
+    for (let i = 0; i < ball.s; i++) {
+      const c = cell(nx + i, ny + j);
+      if (c !== EMPTY) return c;
+    }
+  return EMPTY;
+}
+
+// Bewegung Achse für Achse, Zelle für Zelle -> kein "Durchtunneln"
+function stepAxis(axis) {
+  const v = axis === 'x' ? ball.vx : ball.vy;
+  const dir = Math.sign(v);
+  for (let n = 0; n < Math.abs(v); n++) {
+    const nx = ball.x + (axis === 'x' ? dir : 0);
+    const ny = ball.y + (axis === 'y' ? dir : 0);
+    const hit = probe(nx, ny);
+    if (hit !== EMPTY) {
+      if (hit >= 3) hitBrick(hit);
+      if (hit === PADDLE && axis === 'y') {
+        // Abprallwinkel abhängig von der Trefferposition auf dem Schläger
+        const rel = (ball.x + ball.s / 2 - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+        ball.vx = Math.round(rel * 5) || ball.vx;
+      }
+      if (axis === 'x') ball.vx = -ball.vx; else ball.vy = -ball.vy;
+      return;
+    }
+    ball.x = nx; ball.y = ny;
+  }
+}
+
+// ---------- Eingabe, Skalierung, Schleife ----------
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  stage.style.transform = `translate(${-W * scale / 2}px, ${-H * scale / 2}px) scale(${scale})`;
+}
+addEventListener('resize', resize); resize();
+
+stage.addEventListener('pointermove', e => {
+  const r = stage.getBoundingClientRect();
+  setPaddle((e.clientX - r.left) / scale);
+});
+
+function update() {
+  stepAxis('x'); stepAxis('y');
+  if (ball.y < 0) { /* Ball verloren -> Leben abziehen / Neustart */ }
+}
+function draw() {
+  ball.el.style.transform = `translate(${ball.x}px, ${ball.y}px)`;
+}
+
+let last = 0, acc = 0; const STEP = 1000 / 60;
+function loop(t) {
+  acc += t - last; last = t;
+  while (acc >= STEP) { update(); acc -= STEP; }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// Wände (unterer Rand als Wand, damit der Ball zurückprallt)
+fillRect(0, H - 4, W, 4, WALL);
+
+// Ziegel in der unteren Hälfte
+for (let row = 0; row < 6; row++)
+  for (let col = 0; col < 16; col++)
+    addBrick(16 + col * 62, 280 + row * 24, 60, 22, row < 2 ? 'hart' : 'normal');
+
+setPaddle(W / 2);
+requestAnimationFrame(t => { last = t; loop(t); });
+</script>
+</body>
+</html>
